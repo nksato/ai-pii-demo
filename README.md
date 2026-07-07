@@ -64,7 +64,7 @@ python .\src\app.py
 
 ```powershell
 $env:AZURE_LANGUAGE_ENDPOINT = "https://<your-language-resource-name>.cognitiveservices.azure.com/"
-$env:AZURE_LANGUAGE_KEY = "<your-language-key>"
+$env:AZURE_LANGUAGE_KEY = "<your-api-key>"
 $env:FLASK_DEBUG = "true"
 python .\src\app.py
 ```
