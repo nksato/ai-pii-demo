@@ -42,7 +42,7 @@ h1 {
   gap: 12px;
 }
 
-/* Middle panel: fixed width, vertically centred content */
+/* Middle panel: fixed width, vertically centered content */
 .panel--middle {
   flex: 0 0 220px;
   align-items: center;
