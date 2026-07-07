@@ -39,7 +39,7 @@ pip install -r requirements.txt
 ```powershell
 @'
 AZURE_LANGUAGE_ENDPOINT=https://<your-language-resource-name>.cognitiveservices.azure.com/
-AZURE_LANGUAGE_KEY=<your-language-key>
+AZURE_LANGUAGE_KEY=<your-api-key>
 FLASK_DEBUG=true
 '@ | Set-Content -Path .env -Encoding utf8
 ```
