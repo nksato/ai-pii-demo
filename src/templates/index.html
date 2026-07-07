@@ -99,21 +99,90 @@
         const data = await response.json();
 
         if (!response.ok) {
-          showResult('エラー: ' + (data.error || '不明なエラーが発生しました。'), true);
+          showPlainResult('エラー: ' + (data.error || '不明なエラーが発生しました。'), true);
         } else {
-          showResult(data.masked_text, false);
+          showMaskedResult(data.masked_text, data.mask_segments || []);
         }
       } catch (err) {
-        showResult('通信エラーが発生しました: ' + err.message, true);
+        showPlainResult('通信エラーが発生しました: ' + err.message, true);
       } finally {
         analyzeBtn.disabled = false;
         analyzeBtn.textContent = '検出・マスク';
       }
     });
 
-    function showResult(message, isError) {
+    function showPlainResult(message, isError) {
       resultBox.textContent = message;
       resultBox.className = 'result-box' + (isError ? ' result-box--error' : '');
+    }
+
+    function showMaskedResult(maskedText, segments) {
+      resultBox.className = 'result-box';
+      resultBox.textContent = '';
+
+      if (!maskedText) {
+        return;
+      }
+
+      if (!Array.isArray(segments) || segments.length === 0) {
+        resultBox.textContent = maskedText;
+        return;
+      }
+
+      const sorted = segments
+        .filter(s => Number.isInteger(s.start) && Number.isInteger(s.end) && s.start < s.end)
+        .sort((a, b) => a.start - b.start);
+
+      let cursor = 0;
+      for (const segment of sorted) {
+        const start = Math.max(0, Math.min(segment.start, maskedText.length));
+        const end = Math.max(start, Math.min(segment.end, maskedText.length));
+
+        if (cursor < start) {
+          resultBox.appendChild(document.createTextNode(maskedText.slice(cursor, start)));
+        }
+
+        const token = document.createElement('span');
+        token.className = 'mask-token';
+        token.textContent = maskedText.slice(start, end);
+        token.tabIndex = 0;
+
+        const confidence = typeof segment.confidence === 'number'
+          ? Math.round(segment.confidence * 100)
+          : null;
+        const reason = segment.reason || 'PII と判定されたためマスクしました。';
+        const confidenceText = confidence === null
+          ? '不明'
+          : `${confidence}%`;
+
+        token.setAttribute('data-tooltip', `理由: ${reason}\n確からしさ: ${confidenceText}`);
+        token.setAttribute('aria-label', `マスク情報。理由: ${reason} 確からしさ: ${confidenceText}`);
+        resultBox.appendChild(token);
+
+        cursor = end;
+      }
+
+      if (cursor < maskedText.length) {
+        resultBox.appendChild(document.createTextNode(maskedText.slice(cursor)));
+      }
+
+      updateTooltipDirections();
+    }
+
+    function updateTooltipDirections() {
+      const tokens = resultBox.querySelectorAll('.mask-token');
+      const boxRect = resultBox.getBoundingClientRect();
+
+      tokens.forEach(token => {
+        token.classList.remove('mask-token--below');
+        const tokenRect = token.getBoundingClientRect();
+
+        // If there is not enough room above inside the result panel, show tooltip below.
+        const topSpace = tokenRect.top - boxRect.top;
+        if (topSpace < 56) {
+          token.classList.add('mask-token--below');
+        }
+      });
     }
   </script>
 </body>

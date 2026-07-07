@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import List
+from pathlib import Path
 
 from azure.ai.textanalytics import TextAnalyticsClient
 from azure.core.credentials import AzureKeyCredential
@@ -8,9 +9,20 @@ from azure.core.exceptions import AzureError
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+SRC_DIR = Path(__file__).resolve().parent
+dotenv_path = BASE_DIR / ".env"
+if dotenv_path.exists():
+    load_dotenv(dotenv_path=dotenv_path)
+else:
+    # Fallback for local setups where only .env.example exists.
+    load_dotenv(dotenv_path=BASE_DIR / ".env.example")
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=str(SRC_DIR / "templates"),
+    static_folder=str(SRC_DIR / "static"),
+)
 logger = logging.getLogger(__name__)
 
 # Mapping from frontend category keys to Azure PII entity category strings
@@ -19,6 +31,13 @@ CATEGORY_MAP = {
     "phone": "PhoneNumber",
     "address": "Address",
     "email": "Email",
+}
+
+CATEGORY_LABELS = {
+    "Person": "名前",
+    "PhoneNumber": "電話番号",
+    "Address": "住所",
+    "Email": "メールアドレス",
 }
 
 
@@ -81,7 +100,56 @@ def analyze():
         logger.error("PII recognition error: code=%s message=%s", doc.error.code, doc.error.message)
         return jsonify({"error": "テキストの処理中にエラーが発生しました。入力を確認してください。"}), 502
 
-    return jsonify({"masked_text": doc.redacted_text})
+    entities = list(doc.entities)
+    owners = [None] * len(text)
+
+    # Resolve overlap by preferring the entity with higher confidence for each character.
+    for idx, entity in enumerate(entities):
+        start = max(0, entity.offset)
+        end = min(len(text), entity.offset + entity.length)
+        for pos in range(start, end):
+            current = owners[pos]
+            if current is None:
+                owners[pos] = idx
+                continue
+            if entity.confidence_score > entities[current].confidence_score:
+                owners[pos] = idx
+
+    mask_segments = []
+    redacted_text = doc.redacted_text
+    pos = 0
+    max_index = min(len(redacted_text), len(owners))
+
+    while pos < max_index:
+        owner_idx = owners[pos]
+        if redacted_text[pos] == "*" and owner_idx is not None:
+            start = pos
+            while (
+                pos < max_index
+                and redacted_text[pos] == "*"
+                and owners[pos] == owner_idx
+            ):
+                pos += 1
+
+            entity = entities[owner_idx]
+            category_label = CATEGORY_LABELS.get(entity.category, entity.category)
+            reason = f"{category_label}に該当する可能性があるためマスクしました。"
+
+            mask_segments.append(
+                {
+                    "start": start,
+                    "end": pos,
+                    "reason": reason,
+                    "confidence": float(entity.confidence_score),
+                    "category": entity.category,
+                    "subcategory": entity.subcategory,
+                }
+            )
+            continue
+
+        pos += 1
+
+    return jsonify({"masked_text": redacted_text, "mask_segments": mask_segments})
 
 
 if __name__ == "__main__":
