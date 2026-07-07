@@ -1,0 +1,167 @@
+/* ── Reset & base ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+  background: #f0f4f8;
+  color: #333;
+  padding: 24px 20px;
+  min-height: 100vh;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  color: #0078d4;
+}
+
+/* ── Three-panel layout ──────────────────────────────────────── */
+.container {
+  display: flex;
+  gap: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Middle panel: fixed width, vertically centered content */
+.panel--middle {
+  flex: 0 0 220px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Panel headings ──────────────────────────────────────────── */
+h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #444;
+  border-bottom: 2px solid #0078d4;
+  padding-bottom: 6px;
+  width: 100%;
+}
+
+/* ── Text areas & result box ─────────────────────────────────── */
+textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 380px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
+}
+
+.result-box {
+  flex: 1;
+  width: 100%;
+  min-height: 380px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  background: #f9f9f9;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.result-box--error {
+  color: #c0392b;
+  background: #fdf0ed;
+  border-color: #e74c3c;
+}
+
+/* ── Category checkboxes ─────────────────────────────────────── */
+.category-list {
+  list-style: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.category-list label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.category-list input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0078d4;
+  cursor: pointer;
+}
+
+/* ── Analyze button ──────────────────────────────────────────── */
+button {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px 0;
+  background: #0078d4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:hover:not(:disabled) {
+  background: #106ebe;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  background: #a0a0a0;
+  cursor: not-allowed;
+}
+
+/* ── Responsive: stack panels vertically on small screens ────── */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .panel--middle {
+    flex: unset;
+    width: 100%;
+  }
+}

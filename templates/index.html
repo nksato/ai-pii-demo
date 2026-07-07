@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Azure AI Language PII Detection Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <h1>Azure AI Language PII Detection Demo</h1>
+
+  <div class="container">
+    <!-- Left panel: text input -->
+    <section class="panel" id="panel-input">
+      <h2>入力テキスト</h2>
+      <textarea
+        id="inputText"
+        placeholder="検出・マスクしたいテキストを入力してください…"
+        aria-label="入力テキスト"
+      ></textarea>
+    </section>
+
+    <!-- Middle panel: category selection + submit -->
+    <section class="panel panel--middle" id="panel-controls">
+      <h2>検出項目</h2>
+      <ul class="category-list" role="group" aria-labelledby="category-heading">
+        <li>
+          <label>
+            <input type="checkbox" name="category" value="name" checked />
+            名前
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" name="category" value="phone" checked />
+            電話番号
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" name="category" value="address" checked />
+            住所
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" name="category" value="email" checked />
+            メールアドレス
+          </label>
+        </li>
+      </ul>
+
+      <button id="analyzeBtn" type="button">検出・マスク</button>
+    </section>
+
+    <!-- Right panel: masked result -->
+    <section class="panel" id="panel-result">
+      <h2>結果</h2>
+      <div
+        id="result"
+        class="result-box"
+        role="region"
+        aria-live="polite"
+        aria-label="マスク結果"
+      ></div>
+    </section>
+  </div>
+
+  <script>
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const resultBox  = document.getElementById('result');
+
+    analyzeBtn.addEventListener('click', async () => {
+      const text = document.getElementById('inputText').value.trim();
+      const checkedBoxes = document.querySelectorAll('input[name="category"]:checked');
+      const categories = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (!text) {
+        showResult('テキストを入力してください。', true);
+        return;
+      }
+      if (categories.length === 0) {
+        showResult('検出する項目を少なくとも1つ選択してください。', true);
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = '検出中…';
+      resultBox.className = 'result-box';
+      resultBox.textContent = '';
+
+      try {
+        const response = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, categories }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showResult('エラー: ' + (data.error || '不明なエラーが発生しました。'), true);
+        } else {
+          showResult(data.masked_text, false);
+        }
+      } catch (err) {
+        showResult('通信エラーが発生しました: ' + err.message, true);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = '検出・マスク';
+      }
+    });
+
+    function showResult(message, isError) {
+      resultBox.textContent = message;
+      resultBox.className = 'result-box' + (isError ? ' result-box--error' : '');
+    }
+  </script>
+</body>
+</html>
